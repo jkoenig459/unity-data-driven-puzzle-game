@@ -1,4 +1,13 @@
 # This .gitignore file should be placed at the root of your Unity project directory
+
+# Ignore Unity cache folders anywhere in this repo
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Oo]bj/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
+**/.utmp/
+
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
