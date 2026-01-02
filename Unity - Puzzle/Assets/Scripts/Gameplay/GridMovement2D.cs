@@ -11,6 +11,9 @@ public class GridMovement2D : MonoBehaviour
 
     [Header("Collision")]
     [SerializeField] private Tilemap wallsTilemap;
+    [SerializeField] private LayerMask obstacleLayer;
+    [SerializeField] private float obstacleCheckRadius = 0.2f;
+
 
     private Rigidbody2D rb;
     private bool isMoving;
@@ -53,12 +56,25 @@ public class GridMovement2D : MonoBehaviour
 
     private bool IsBlocked(Vector2 targetWorldPos)
     {
-        if (wallsTilemap == null)
-            return false;
+        // 1) Tilemap blocking
+        if (wallsTilemap != null)
+        {
+            Vector3Int cell = wallsTilemap.WorldToCell(targetWorldPos);
+            if (wallsTilemap.HasTile(cell))
+                return true;
+        }
 
-        Vector3Int cell = wallsTilemap.WorldToCell(targetWorldPos);
-        return wallsTilemap.HasTile(cell);
+        // 2) Collider blocking (doors, crates, etc.)
+        if (obstacleLayer.value != 0)
+        {
+            Collider2D hit = Physics2D.OverlapCircle(targetWorldPos, obstacleCheckRadius, obstacleLayer);
+            if (hit != null)
+                return true;
+        }
+
+        return false;
     }
+
 
     private IEnumerator MoveTo(Vector2 targetWorldPos)
     {
