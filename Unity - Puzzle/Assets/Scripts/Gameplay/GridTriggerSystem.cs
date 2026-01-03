@@ -4,57 +4,79 @@ using UnityEngine.Tilemaps;
 
 public class GridTriggerSystem : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private Tilemap triggersTilemap;
     [SerializeField] private Transform player;
 
-    [Header("Trigger Tiles")]
-    [SerializeField] private TileBase plateTile;
+    private Tilemap triggersTilemap;
+    private TileBase plateTile;
 
-    [Header("Actions")]
-    [SerializeField] private List<Door2D> doorsToToggle = new();
+    private Vector3Int lastCell;
+    private bool hasLast;
 
-    private Vector3Int lastPlayerCell;
-    private bool hasLastCell;
+    // Maps plate cell -> doors to toggle
+    private readonly Dictionary<Vector3Int, List<Door2D>> plateActions = new();
+
+    public void ConfigureFromLevel(
+        LevelDefinition level,
+        Tilemap triggersMap,
+        TileBase plate,
+        Dictionary<string, Door2D> doorsById)
+    {
+        triggersTilemap = triggersMap;
+        plateTile = plate;
+
+        plateActions.Clear();
+
+        foreach (var plateDef in level.plates)
+        {
+            Vector3Int cell = new(plateDef.cell.x, plateDef.cell.y, 0);
+
+            var list = new List<Door2D>();
+            foreach (string id in plateDef.togglesDoorIds)
+            {
+                if (doorsById.TryGetValue(id, out Door2D door) && door != null)
+                    list.Add(door);
+            }
+
+            plateActions[cell] = list;
+        }
+    }
 
     private void Start()
     {
-        if (triggersTilemap == null || player == null)
-            return;
-
-        lastPlayerCell = triggersTilemap.WorldToCell(player.position);
-        hasLastCell = true;
+        if (player == null)
+            Debug.LogError("GridTriggerSystem missing player reference.");
     }
 
     private void Update()
     {
-        if (triggersTilemap == null || player == null)
+        if (player == null || triggersTilemap == null)
             return;
 
         Vector3Int cell = triggersTilemap.WorldToCell(player.position);
 
-        if (hasLastCell && cell == lastPlayerCell)
+        if (hasLast && cell == lastCell)
             return;
 
-        lastPlayerCell = cell;
-        hasLastCell = true;
+        lastCell = cell;
+        hasLast = true;
 
         HandleCellEntered(cell);
     }
 
     private void HandleCellEntered(Vector3Int cell)
     {
-        TileBase tile = triggersTilemap.GetTile(cell);
-        if (tile == null)
+        if (!plateActions.TryGetValue(cell, out var doors))
             return;
 
-        if (plateTile != null && tile == plateTile)
+        // Optional: verify the tile is actually a plate tile (extra safety)
+        if (plateTile != null)
         {
-            foreach (var door in doorsToToggle)
-            {
-                if (door != null)
-                    door.Toggle();
-            }
+            TileBase t = triggersTilemap.GetTile(cell);
+            if (t != plateTile)
+                return;
         }
+
+        foreach (var door in doors)
+            door?.Toggle();
     }
 }

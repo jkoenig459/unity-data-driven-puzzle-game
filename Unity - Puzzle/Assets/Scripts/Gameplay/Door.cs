@@ -3,10 +3,13 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class Door2D : MonoBehaviour
 {
+    [SerializeField] private string doorId = "DoorA";
     [SerializeField] private bool startsClosed = true;
 
     private Collider2D col;
     private SpriteRenderer sr;
+
+    public string DoorId => doorId;
 
     private void Awake()
     {
@@ -14,6 +17,12 @@ public class Door2D : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
 
         SetClosed(startsClosed);
+    }
+
+    public void Initialize(string id, bool closed)
+    {
+        doorId = id;
+        SetClosed(closed);
     }
 
     public void SetClosed(bool closed)
